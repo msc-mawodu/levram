@@ -27,7 +27,7 @@ public class HeroStore {
 
 
     public void store(Hero hero) {
-        logger.info(String.format("Thread %s attempting to store hero in db;", Thread.currentThread().getId()));
+        logger.info(String.format("Attempting to store hero in db @Thread: %s", Thread.currentThread().getId()));
 
         try {
             Connection jdbc = jdbcTemplate.getDataSource().getConnection();
@@ -58,7 +58,7 @@ public class HeroStore {
 
             jdbc.commit(); // commit as a transaction (3 separate inserts)
             jdbc.close();
-            logger.info(String.format("Stored %s in db;", hero.getName()));
+            logger.info(String.format("Successfully stored %s in db @Thread: %s", hero.getName(), Thread.currentThread().getId()));
 
         } catch (SQLException e) {
             e.printStackTrace();
@@ -66,7 +66,6 @@ public class HeroStore {
         }
     }
 
-    // todo:
     public void batchStore(List<Hero> heroes) {
         // todo insert all as a single transaction.
     }

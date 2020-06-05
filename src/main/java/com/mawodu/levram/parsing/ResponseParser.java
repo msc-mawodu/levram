@@ -7,6 +7,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.mawodu.levram.HeroParser;
 import com.mawodu.levram.HeroRepositoryMetaData;
 import com.mawodu.levram.entities.Hero;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.List;
 import java.util.Optional;
@@ -14,11 +16,14 @@ import java.util.Optional;
 public class ResponseParser {
     private String json;
 
+    Logger logger = LoggerFactory.getLogger(ResponseParser.class);
+
     public ResponseParser(String jsonResponse) {
         json = jsonResponse;
     }
 
     public List<Hero> heroesFromJSON() {
+        logger.info(String.format("Attempting to parse JSON @Thread: %s", Thread.currentThread().getId()));
         HeroParser heroParser = new HeroParser();
 
         try {
@@ -38,6 +43,7 @@ public class ResponseParser {
             e.printStackTrace();
         }
 
+        logger.info(String.format("Successfully parsed JSON @Thread: %s", Thread.currentThread().getId()));
         return heroParser.getHeroes();
     }
 

@@ -2,9 +2,7 @@ package com.mawodu.levram;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.scheduling.annotation.Async;
 import org.springframework.scheduling.annotation.AsyncResult;
-import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.util.DigestUtils;
 import java.io.*;
 import java.net.HttpURLConnection;
@@ -21,9 +19,8 @@ public class DataProvider {
     private static final String API_PUB_KEY = "2c5571f9bb1bf818776fd7e5e7ccd3ca";
     private static final String API_PRIVATE_KEY = "20fdad9bb4e505069bb0feb1df662c8036011516";
 
-//    @Async
-//    @Scheduled
     public Future<String> call(int offset)  {
+        logger.info(String.format("Attempting to pull data from marvel api @Thread: %s", Thread.currentThread().getId()));
         int status = 0;
         try {
 
@@ -56,10 +53,11 @@ public class DataProvider {
             }
             in.close();
 
-            logger.info("Succesfully pulled data from marvel api.");
+            logger.info(String.format("Succesfully pulled data from marvel api @Thread: %s", Thread.currentThread().getId()));
             return new AsyncResult<String>(content.toString());
 
         } catch (IOException e) {
+            logger.error(String.format("Failed to pull data from marvel api @Thread: %s", Thread.currentThread().getId()));
             return new AsyncResult<String>(String.format("ERROR %s", status));
         }
     }

@@ -35,7 +35,6 @@ public class FetchAndUpdateDb implements Runnable {
         try {
             prefetch().ifPresent( heroes -> {
                 heroes.stream().forEach( hero -> {
-                    logger.info(String.format("Attempting to store hero."));
                     heroStore.store(hero);
                 });
             });
