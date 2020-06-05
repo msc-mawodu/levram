@@ -1,6 +1,8 @@
 package com.mawodu.levram;
 
+import com.mawodu.levram.clients.MarvelClient;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.PropertySource;
@@ -20,6 +22,9 @@ public class CoreConfig {
 
     @Autowired
     Environment env;
+
+    @Autowired
+    TaskExecutor taskExecutor;
 
     @Bean
     public DataSource dataSource() {
@@ -53,8 +58,21 @@ public class CoreConfig {
     }
 
     @Bean
-    //    @Profile("dev")
-    public DataProvider dataProvider() {
-        return new DataProvider();
+    MarvelClient marvelClient() {
+        return new MarvelClient();
     }
+
+    @Bean
+    @Qualifier("marvel")
+    public ClientHandler marvelClientHandler() {
+        return new ClientHandler(marvelClient());
+    }
+
+//    @Bean
+//    @Autowired
+//    public MarvelDataTrigger marvelDataTrigger(TaskExecutor taskExecutor, HeroStore store) {
+//        return new MarvelDataTrigger(taskExecutor, store, marvelClientHandler());
+//    }
+
+
 }

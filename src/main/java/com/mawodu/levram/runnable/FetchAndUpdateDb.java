@@ -1,6 +1,6 @@
 package com.mawodu.levram.runnable;
 
-import com.mawodu.levram.DataProvider;
+import com.mawodu.levram.ClientHandler;
 import com.mawodu.levram.HeroStore;
 import com.mawodu.levram.entities.Hero;
 import com.mawodu.levram.parsing.ResponseParser;
@@ -14,13 +14,13 @@ public class FetchAndUpdateDb implements Runnable {
     Logger logger = LoggerFactory.getLogger(FetchAndUpdateDb.class);
 
     private HeroStore heroStore;
-    private DataProvider dataProvider;
+    private ClientHandler clientHandler;
     private int offset;
 
 
-    public FetchAndUpdateDb(HeroStore heroStore, DataProvider dataProvider, int offset) {
+    public FetchAndUpdateDb(HeroStore heroStore, ClientHandler clientHandler, int offset) {
         this.heroStore = heroStore;
-        this.dataProvider = dataProvider;
+        this.clientHandler = clientHandler;
         this.offset = offset;
     }
 
@@ -30,7 +30,7 @@ public class FetchAndUpdateDb implements Runnable {
     }
 
     private void fetch() {
-        dataProvider.fetch(offset)
+        clientHandler.processRequest(String.valueOf(offset))
                 .ifPresent(this::parse);
     }
 

@@ -1,9 +1,10 @@
 package com.mawodu.levram.runnable;
 
-import com.mawodu.levram.DataProvider;
+import com.mawodu.levram.ClientHandler;
 import com.mawodu.levram.HeroRepositoryMetaData;
 import com.mawodu.levram.HeroStore;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.core.task.TaskExecutor;
 import org.springframework.stereotype.Service;
 
@@ -15,13 +16,15 @@ public class MarvelDataTrigger {
 
     private TaskExecutor taskExecutor;
     private HeroStore heroStore;
-    private DataProvider dataProvider;
+    @Qualifier("marvel")
+    private ClientHandler clientHandler;
+
 
     @Autowired
-    public MarvelDataTrigger(TaskExecutor taskExecutor, HeroStore heroStore, DataProvider dataProvider) {
+    public MarvelDataTrigger(TaskExecutor taskExecutor, HeroStore heroStore, ClientHandler clientHandler) {
         this.taskExecutor = taskExecutor;
         this.heroStore = heroStore;
-        this.dataProvider = dataProvider;
+        this.clientHandler = clientHandler;
     }
 
     @PostConstruct
@@ -29,7 +32,7 @@ public class MarvelDataTrigger {
         HeroRepositoryMetaData metaData = prefetchMetadata();
 
         for(int offset=0; offset<metaData.getTotal(); offset+=metaData.getCount()) {
-            taskExecutor.execute(new FetchAndUpdateDb(heroStore, dataProvider, offset));
+            taskExecutor.execute(new FetchAndUpdateDb(heroStore, clientHandler, offset));
         }
     }
 
@@ -37,7 +40,7 @@ public class MarvelDataTrigger {
     private HeroRepositoryMetaData prefetchMetadata() {
         return HeroRepositoryMetaData.create()
 //                .total(1493)
-                .total(80)
+                .total(200)
                 .limit(20)
                 .count(20)
                 .responseCode(200)
