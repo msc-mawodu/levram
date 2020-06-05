@@ -1,6 +1,5 @@
 package com.mawodu.levram;
 
-
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -9,16 +8,14 @@ import org.springframework.core.env.Environment;
 import org.springframework.core.task.TaskExecutor;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.datasource.DriverManagerDataSource;
-import org.springframework.scheduling.annotation.EnableAsync;
-import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 
 import javax.sql.DataSource;
 
+// to store credentials preference to use: https://spring.io/guides/gs/vault-config/
 
 @Configuration
-//@EnableAsync
-@PropertySource("classpath:application.properties")
+@PropertySource({"classpath:application.properties"})
 public class CoreConfig {
 
     @Autowired
@@ -37,9 +34,9 @@ public class CoreConfig {
     @Bean
     public TaskExecutor threadPoolTaskExecutor() {
         ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
-        executor.setCorePoolSize(4);
-        executor.setMaxPoolSize(4);
-        executor.setThreadNamePrefix("levram-fetch-and-store");
+        executor.setCorePoolSize(Integer.valueOf(env.getProperty("cores.pool.size")));
+        executor.setMaxPoolSize(Integer.valueOf(env.getProperty("threads.pool.size")));
+        executor.setThreadNamePrefix("fetch-store");
         executor.initialize();
         return executor;
     }
@@ -57,7 +54,6 @@ public class CoreConfig {
 
     @Bean
     //    @Profile("dev")
-    // this probably shouldn't be a bean
     public DataProvider dataProvider() {
         return new DataProvider();
     }
