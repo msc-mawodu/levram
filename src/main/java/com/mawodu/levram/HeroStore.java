@@ -12,6 +12,7 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 @Transactional
@@ -19,55 +20,14 @@ public class HeroStore {
 
     Logger logger = LoggerFactory.getLogger(HeroStore.class);
 
+    private static final String insertHero = "INSERT INTO hero (h_id, h_name) VALUES (?,?)";
+    private static final String insertHeroThumbnail = "INSERT INTO thumbnail (h_id, t_path, t_extension) VALUES (?, ?, ?)";
+    private static final String insertHeroDescription = "INSERT INTO description (h_id, d_text, d_language) VALUES (?, ?, ?);";
+
     private JdbcTemplate jdbcTemplate;
 
     public HeroStore(JdbcTemplate jdbcTemplate) {
         this.jdbcTemplate = jdbcTemplate;
-    }
-
-
-    public void store(Hero hero) {
-        logger.info(String.format("Attempting to store hero in db @Thread: %s", Thread.currentThread().getId()));
-
-        try {
-            Connection jdbc = jdbcTemplate.getDataSource().getConnection();
-
-            jdbc.setAutoCommit(false); //transaction block start
-
-            String insertHero = "INSERT INTO hero (h_id, h_name) VALUES (?,?)";
-            String insertHeroThumbnail = "INSERT INTO thumbnail (h_id, t_path, t_extension) VALUES (?, ?, ?)";
-            String insertHeroDescription = "INSERT INTO description (h_id, d_text, d_language) VALUES (?, ?, ?);";
-
-            PreparedStatement psInsertHero = jdbc.prepareStatement(insertHero);
-            PreparedStatement psInsertHeroThumbnail = jdbc.prepareStatement(insertHeroThumbnail);
-            PreparedStatement psInsertHeroDescription = jdbc.prepareStatement(insertHeroDescription);
-
-            psInsertHero.setInt(1, hero.getId());
-            psInsertHero.setString(2, hero.getName());
-            psInsertHero.executeUpdate();
-
-            psInsertHeroThumbnail.setInt(1, hero.getId());
-            psInsertHeroThumbnail.setString(2, hero.getThumbnail().getPath());
-            psInsertHeroThumbnail.setString(3, hero.getThumbnail().getExtension());
-            psInsertHeroThumbnail.executeUpdate();
-
-            psInsertHeroDescription.setInt(1, hero.getId());
-            psInsertHeroDescription.setString(2, hero.getDescription());
-            psInsertHeroDescription.setString(3, "en"); // todo: drive by language
-            psInsertHeroDescription.executeUpdate();
-
-            jdbc.commit(); // commit as a transaction (3 separate inserts)
-            jdbc.close();
-            logger.info(String.format("Successfully stored %s in db @Thread: %s", hero.getName(), Thread.currentThread().getId()));
-
-        } catch (SQLException e) {
-            e.printStackTrace();
-            // handle...
-        }
-    }
-
-    public void batchStore(List<Hero> heroes) {
-        // todo insert all as a single transaction.
     }
 
     public List<Integer> fetchAllHeroIds() {
@@ -86,5 +46,62 @@ public class HeroStore {
         }
 
         return ids;
+    }
+
+    public void store(Hero hero) {
+        this.batchStore(Collections.singletonList(hero));
+    }
+
+    public void batchStore(List<Hero> heroes) {
+        try {
+            Connection jdbc = jdbcTemplate.getDataSource().getConnection();
+            jdbc.setAutoCommit(false); // disable auto commit, to enable batch processing as a single transaction.
+
+            PreparedStatement psInsertHero = jdbc.prepareStatement(insertHero);
+            PreparedStatement psInsertHeroThumbnail = jdbc.prepareStatement(insertHeroThumbnail);
+            PreparedStatement psInsertHeroDescription = jdbc.prepareStatement(insertHeroDescription);
+
+            heroes.stream().forEach( h -> {
+                try {
+                    prepareBatchItem(psInsertHero, psInsertHeroDescription, psInsertHeroThumbnail, h);
+                } catch (SQLException e) {
+                    e.printStackTrace();
+                }
+            });
+
+            int[] resultHero = psInsertHero.executeBatch();
+            int[] resultDescription = psInsertHeroDescription.executeBatch();
+            int[] resultThumbnail = psInsertHeroThumbnail.executeBatch();
+
+            if (resultHero.length != resultDescription.length || resultHero.length != resultDescription.length || resultDescription.length != resultThumbnail.length) {
+                // todo: handle, rollback and re-try transaction if something fails.
+                jdbc.rollback();
+            }
+
+            jdbc.commit();
+
+            logger.info(String.format("Inserted %s heroes into db @Thread: %s", resultHero.length, Thread.currentThread().getId()));
+
+        } catch (SQLException e) {
+            logger.error(String.format("FAILED to insert heroes into db @Thread: %s", Thread.currentThread().getId()));
+            e.printStackTrace();
+        }
+    }
+
+    // NB. prepared statement objects are passed as reference and mutated to allow batch execution.
+    private void prepareBatchItem(PreparedStatement psInsertHero, PreparedStatement psInsertHeroDescription, PreparedStatement psInsertHeroThumbnail, Hero hero) throws SQLException {
+        psInsertHero.setInt(1, hero.getId());
+        psInsertHero.setString(2, hero.getName());
+        psInsertHero.addBatch();
+
+        psInsertHeroDescription.setInt(1, hero.getId());
+        psInsertHeroDescription.setString(2, hero.getDescription());
+        psInsertHeroDescription.setString(3, "en");
+        psInsertHeroDescription.addBatch();
+
+        psInsertHeroThumbnail.setInt(1, hero.getId());
+        psInsertHeroThumbnail.setString(2, hero.getThumbnail().getPath());
+        psInsertHeroThumbnail.setString(3, hero.getThumbnail().getExtension());
+        psInsertHeroThumbnail.addBatch();
     }
 }

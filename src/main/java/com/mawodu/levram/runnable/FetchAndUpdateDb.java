@@ -33,19 +33,17 @@ public class FetchAndUpdateDb implements Runnable {
     public void run() {
         logger.info(String.format("Attempting to fetch and store heroes starting with offset: %s .", offset));
         try {
-            prefetch().ifPresent( heroes -> {
-                heroes.stream().forEach( hero -> {
-                    heroStore.store(hero);
-                });
-            });
+            prefetch().ifPresent(heroStore::batchStore);
+
         } catch (InterruptedException e) {
             e.printStackTrace();
+
         } catch (ExecutionException e) {
             e.printStackTrace();
+
         }
     }
 
-    // fixme: there must be a better way than sleep.
     private Optional<List<Hero>> prefetch() throws InterruptedException, ExecutionException {
         Future<String> future = dataProvider.call(offset);
         for (int i=0; i<15; i++) {
