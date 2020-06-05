@@ -29,10 +29,10 @@ public class DbStoreTest {
     HeroStore store;
 
     @Test
-    public void shouldStoreAllCorrectly() {
+    public void shouldHandleAllOperationsCorrectly() {
 
         ResponseParser parser = new ResponseParser(getJsonFromFile());
-        List<Hero> heroes = parser.heroesFromJSON();
+        List<Hero> heroes = parser.heroesFromJSON().get();
 
         heroes.stream().forEach( hero ->
                 store.store(hero)
@@ -40,6 +40,12 @@ public class DbStoreTest {
 
         List<Integer> retreivedHeroesIds = store.fetchAllHeroIds();
         Assert.assertEquals(20, retreivedHeroesIds.size());
+
+        Hero h1010354 = store.fetchHeroById(1010354);
+        Assert.assertEquals("Adam Warlock", h1010354.getName());
+        Assert.assertEquals("Adam Warlock is an artificially created human who was born in a cocoon at a scientific complex called The Beehive.", h1010354.getDescription());
+        Assert.assertEquals("Adam Warlock is an artificially created human who was born in a cocoon at a scientific complex called The Beehive.", h1010354.getDescription());
+        Assert.assertEquals("http://i.annihil.us/u/prod/marvel/i/mg/a/f0/5202887448860", h1010354.getThumbnail().getPath());
 
         ids().stream().forEach( i -> {
             if( retreivedHeroesIds.contains(i)) {

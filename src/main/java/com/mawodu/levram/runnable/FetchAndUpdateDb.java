@@ -8,9 +8,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.List;
-import java.util.Optional;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Future;
 
 public class FetchAndUpdateDb implements Runnable {
 
@@ -20,40 +17,29 @@ public class FetchAndUpdateDb implements Runnable {
     private DataProvider dataProvider;
     private int offset;
 
+
     public FetchAndUpdateDb(HeroStore heroStore, DataProvider dataProvider, int offset) {
         this.heroStore = heroStore;
         this.dataProvider = dataProvider;
         this.offset = offset;
     }
 
-    public FetchAndUpdateDb(int offset) {
-        this.offset = offset;
-    }
-
+    // FETCH -> PARSE -> STORE
     public void run() {
-        logger.info(String.format("Attempting to fetch and store heroes starting with offset: %s .", offset));
-        try {
-            prefetch().ifPresent(heroStore::batchStore);
-
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-
-        } catch (ExecutionException e) {
-            e.printStackTrace();
-
-        }
+        fetch();
     }
 
-    private Optional<List<Hero>> prefetch() throws InterruptedException, ExecutionException {
-        Future<String> future = dataProvider.call(offset);
-        for (int i=0; i<15; i++) {
-            if (future.isDone()) {
-                return Optional.of(new ResponseParser(future.get()).heroesFromJSON());
-            }
-            logger.info(String.format("Retrying call @Thread: %s", Thread.currentThread().getId()));
-            Thread.sleep(1000);
-        }
-        logger.error(String.format("FAILED to get data @Thread: %s", Thread.currentThread().getId()));
-        return Optional.empty();
+    private void fetch() {
+        dataProvider.fetch(offset)
+                .ifPresent(this::parse);
+    }
+
+    private void parse(String response) {
+        new ResponseParser(response).heroesFromJSON()
+                .ifPresent(this::store);
+    }
+
+    private void store(List<Hero> heroes) {
+        heroStore.batchStore(heroes);
     }
 }

@@ -1,5 +1,6 @@
 package com.mawodu.levram;
 
+import com.mawodu.levram.parsing.ResponseParser;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -8,9 +9,10 @@ import org.springframework.util.DigestUtils;
 import java.io.*;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.util.Optional;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 
-// todo: implements Callable ???
 public class DataProvider {
 
     Logger logger = LoggerFactory.getLogger(DataProvider.class);
@@ -24,7 +26,29 @@ public class DataProvider {
     @Value("${marvel.pk}")
     private String API_PRIVATE_KEY;
 
-    public Future<String> call(int offset)  {
+
+    public Optional<String> fetch(int offset) {
+        Future<String> response = call(offset);
+        Optional<String> result = Optional.empty();
+        try {
+            for (int i = 0; i < 15; i++) {
+                if (response.isDone()) {
+                    logger.info(String.format("Succesfully pulled data from marvel api @Thread: %s", Thread.currentThread().getId()));
+                    result = Optional.of(response.get());
+                }
+                logger.info(String.format("Retrying call @Thread: %s", Thread.currentThread().getId()));
+                Thread.sleep(1000);
+            }
+
+        } catch (InterruptedException | ExecutionException ex) {
+            logger.error(String.format("FAILED to get data @Thread: %s", Thread.currentThread().getId()));
+            ex.printStackTrace();
+        }
+        return result;
+    }
+
+    // TODO: THIS WILL BE METHOD IN A CLIENT
+    private Future<String> call(int offset)  {
 
         if (API_PRIVATE_KEY == null || API_PUB_KEY == null) {
             logger.info(String.format("Attempting to pull data from marvel api @Thread: %s", Thread.currentThread().getId()));
@@ -64,10 +88,10 @@ public class DataProvider {
             }
             in.close();
 
-            logger.info(String.format("Succesfully pulled data from marvel api @Thread: %s", Thread.currentThread().getId()));
             return new AsyncResult<String>(content.toString());
 
         } catch (IOException e) {
+            // todo: handle if fails... re-try
             logger.error(String.format("Failed to pull data from marvel api @Thread: %s", Thread.currentThread().getId()));
             return new AsyncResult<String>(String.format("ERROR %s", status));
         }

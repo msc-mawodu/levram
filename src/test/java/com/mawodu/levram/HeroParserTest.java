@@ -23,7 +23,7 @@ public class HeroParserTest {
     @Test
     public void shouldParseCorrectly() throws JsonProcessingException {
         ResponseParser parser = new ResponseParser(getJsonFromFile());
-        List<Hero> heroes = parser.heroesFromJSON();
+        List<Hero> heroes = parser.heroesFromJSON().get();
 
         Assertions.assertEquals(20, heroes.size());
         assertHero(1011334, "3-D Man", "", "http://i.annihil.us/u/prod/marvel/i/mg/c/e0/535fecbbb9784", "jpg", heroes.get(0));

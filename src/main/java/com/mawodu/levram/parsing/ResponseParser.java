@@ -22,8 +22,9 @@ public class ResponseParser {
         json = jsonResponse;
     }
 
-    public List<Hero> heroesFromJSON() {
+    public Optional<List<Hero>> heroesFromJSON() {
         logger.info(String.format("Attempting to parse JSON @Thread: %s", Thread.currentThread().getId()));
+        Optional<List<Hero>> result = Optional.empty();
         HeroParser heroParser = new HeroParser();
 
         try {
@@ -36,6 +37,8 @@ public class ResponseParser {
                     .elements()
                     .forEachRemaining(heroParser::addHero);
 
+            result = Optional.of(heroParser.getHeroes());
+
         } catch (JsonMappingException e) {
             e.printStackTrace();
 
@@ -44,7 +47,7 @@ public class ResponseParser {
         }
 
         logger.info(String.format("Successfully parsed JSON @Thread: %s", Thread.currentThread().getId()));
-        return heroParser.getHeroes();
+        return result;
     }
 
     public Optional<HeroRepositoryMetaData> metaDataFromJson() {
@@ -68,4 +71,17 @@ public class ResponseParser {
 
         return result;
     }
+
+    public static Optional<String> heroToJson(Hero hero) {
+        Optional<String> result = Optional.empty();
+        try {
+            ObjectMapper objectMapper = new ObjectMapper();
+            result = Optional.of(objectMapper.writeValueAsString(hero));
+        } catch (JsonProcessingException e) {
+            e.printStackTrace();
+        }
+
+        return result;
+    }
+
 }

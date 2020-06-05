@@ -2,6 +2,7 @@ package com.mawodu.levram;
 
 
 import com.mawodu.levram.entities.Hero;
+import com.mawodu.levram.entities.Thumbnail;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -23,6 +24,8 @@ public class HeroStore {
     private static final String insertHero = "INSERT INTO hero (h_id, h_name) VALUES (?,?)";
     private static final String insertHeroThumbnail = "INSERT INTO thumbnail (h_id, t_path, t_extension) VALUES (?, ?, ?)";
     private static final String insertHeroDescription = "INSERT INTO description (h_id, d_text, d_language) VALUES (?, ?, ?);";
+
+    private static final String DEFAULT_LANGUAGE_TAG = "en";
 
     private JdbcTemplate jdbcTemplate;
 
@@ -46,6 +49,39 @@ public class HeroStore {
         }
 
         return ids;
+    }
+
+    public Hero fetchHeroById(int id) {
+        Hero hero = null;
+        try {
+            Connection jdbc = jdbcTemplate.getDataSource().getConnection();
+            String sql = "SELECT * from hero h, description d, thumbnail t" +
+                    " where h.h_id=d.h_id and d.h_id=t.h_id" +
+                    " AND h.h_id=? and d.d_language=?;";
+
+            PreparedStatement psSelect = jdbc.prepareStatement(sql);
+            psSelect.setInt(1, id);
+            psSelect.setString(2, DEFAULT_LANGUAGE_TAG);
+
+            ResultSet rows = psSelect.executeQuery();
+            while(rows.next()) {
+                hero = new Hero(
+                    rows.getInt("h_id"),
+                    rows.getString("h_name"),
+                    rows.getString("d_text"),
+                    new Thumbnail(
+                            rows.getString("t_path"),
+                            rows.getString("t_extension")
+                    )
+                );
+            }
+
+        } catch (SQLException e) {
+            e.printStackTrace();
+            // handle...
+        }
+
+        return hero;
     }
 
     public void store(Hero hero) {
