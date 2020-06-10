@@ -3,9 +3,11 @@ package com.mawodu.levram;
 import com.mawodu.levram.clients.MarvelClient;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.beans.factory.config.BeanFactoryPostProcessor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.PropertySource;
+import org.springframework.context.annotation.Scope;
 import org.springframework.core.env.Environment;
 import org.springframework.core.task.TaskExecutor;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -19,6 +21,11 @@ import javax.sql.DataSource;
 @Configuration
 @PropertySource({"classpath:application.properties"})
 public class CoreConfig {
+
+    @Bean
+    public static BeanFactoryPostProcessor beanFactoryPostProcessor() {
+        return new TenantBeanFactoryPostProcessor();
+    }
 
     @Autowired
     Environment env;
@@ -58,12 +65,14 @@ public class CoreConfig {
     }
 
     @Bean
+    @Scope(scopeName = "thread")
     MarvelClient marvelClient() {
         return new MarvelClient();
     }
 
     @Bean
     @Qualifier("marvel")
+    @Scope(scopeName = "thread")
     public ClientHandler marvelClientHandler() {
         return new ClientHandler(marvelClient());
     }

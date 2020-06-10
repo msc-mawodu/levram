@@ -13,7 +13,7 @@ import java.util.concurrent.Future;
 public class ClientHandler {
 
     Logger logger = LoggerFactory.getLogger(ClientHandler.class);
-    private static final int DELAY = 10;
+    private static final int DELAY = 500;
     private static final int TIMEOUT = 5000;
 
     Client client;
